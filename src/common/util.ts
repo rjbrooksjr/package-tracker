@@ -1,4 +1,5 @@
 import { complement, pipe, split, map, pickBy, values, sum, curry } from 'ramda';
+import { Checksum } from './types';
 
 const toObj = list => Object.assign({}, list);
 
@@ -25,3 +26,12 @@ export const validUsps = curry(trackingNumber => {
 
   return 10 - sum % 10 === checksum;
 })
+
+export const dummy = curry((checksum: Checksum, trackin: string): boolean => true);
+
+export const mod10 = curry((checksum: Checksum, tracking: string): boolean => {
+  const t = formatList(tracking);
+  const chk = t.pop();
+  const sum = (getSum(evenKeys, t) * checksum.evens_multiplier) + (getSum(oddKeys, t) * checksum.odds_multiplier);
+  return 10 - sum % 10 === chk;
+});

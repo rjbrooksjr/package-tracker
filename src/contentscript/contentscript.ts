@@ -1,99 +1,89 @@
 import './contentscript.scss';
 import { Carrier } from '../common/types';
-import { validUsps } from '../common/util';
-import { identity, pipe, concat, map, prop, join, flip, match, objOf, tap, filter, uniq } from 'ramda';
+import { mod10, dummy } from '../common/util';
+import { identity, pipe, concat, map, prop, join, flip, match, objOf, tap, filter, uniq, pluck, replace, cond, pathEq, applySpec } from 'ramda';
+import * as usps from '../../external/tracking_number_data/couriers/usps.json';
 
-const carriers: Carrier[] = [
-  {
-    name: 'USPS',
-    patterns: [
-      '(94|93|92|94|95)[0-9]{20}',
-      '(94|93|92|94|95)[0-9]{22}',
-      '(70|14|23|03)[0-9]{14}',
-      '(M0|82)[0-9]{8}',
-      '([A-Z]{2})[0-9]{9}([A-Z]{2})',
-    ],
-    validator: validUsps,
-  },
-  {
-    name: 'UPS',
-    patterns: [
-      '(1Z)[0-9A-Z]{16}',
-      '(T)+[0-9A-Z]{10}',
-      '[0-9]{9}',
-      '[0-9]{26}',
-    ],
-    validator: identity,
-  },
-  {
-    name: 'FedEx',
-    patterns: [
-      '[0-9]{20}',
-      '[0-9]{15}',
-      '[0-9]{12}',
-      '[0-9]{22}',
-    ],
-    validator: identity
-  }
-];
+const c = [usps];
 
-// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => pipe(
-//   map(
+const getList = carrier => pipe(
+  prop('regex'),
+  join(''),
+  replace(/\?<[a-zA-Z]+>/g, ''),
+  concat('(\\b'),
+  flip(concat)('\\b)'),
+  (r: string) => new RegExp(r, 'g'),
+  flip(match)(document.body.innerHTML),
+  uniq,
+)(carrier);
 
-//     pipe(
+const validator = trackingNumber => trackingNumber.validation.checksum.name === 'mod10'
+  ? mod10
+  : dummy;
+
+const getTrackingNumbers = carrier => pipe(
+  applySpec({
+    'name': prop('name'),
+    'tr': pipe(
+      prop('tracking_numbers'),
+        map(
+            tn => pipe(getList, filter(validator(tn)(tn.validation.checksum)))(tn),
+
+        )
+    )
+  })
+  ,
+  tap(x => console.log('111', x)),
+)(carrier);
+
+const getTrackingNumbers2 = carrier => pipe(
+  prop('tracking_numbers'),
+  pluck('regex'),
+  map(pipe(join(''), replace(/\?<[a-zA-Z]+>/g, ''))),
+  join('\\b)|(\\b'),
+  concat('(\\b'),
+  flip(concat)('\\b)'),
+  (r: string) => new RegExp(r, 'g'),
+  flip(match)(document.body.innerHTML),
+  // tap(x => console.log('111', x)),
+  uniq,
+  // filter(carrier.validator),
+  // objOf('trackingNumbers'),
+  // tap(x => console.log('x', x)),
+)(carrier);
+
+const validateTrackingNumbers = (carrier, trackingNumbers) => cond([
+    [pathEq(['validation', 'checksum', 'name'], 'mod10'), mod10]
+])(carrier);
+
+const validate = (carrier: Carrier) => carrier.courier_code === 'usps'
+  ? mod10
+  : identity;
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const foo = c.map(carrier => ({
+    track: getTrackingNumbers(carrier),
+    name: carrier.name,
+  }));
+
+  console.log('ccc', foo);
+});
+// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+//   const foo = carriers.map(carrier => ({
+//     track: pipe(
 //       prop('patterns'),
 //       join('\\b)|(\\b'),
 //       concat('(\\b'),
 //       flip(concat)('\\b)'),
 //       (r: string) => new RegExp(r, 'g'),
 //       flip(match)(document.body.innerHTML),
+//       uniq,
+//       filter(carrier.validator),
 //       // objOf('trackingNumbers'),
 //       // tap(x => console.log('x', x)),
+//     )(carrier),
+//     name: carrier.name,
+//   }));
 
-//     ),
-
-//   ),
-//   objOf('foo'),
-//   tap(x => console.log('x', x)),
-// )(carriers))
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const foo = carriers.map(carrier => ({
-    track: pipe(
-      prop('patterns'),
-      join('\\b)|(\\b'),
-      concat('(\\b'),
-      flip(concat)('\\b)'),
-      (r: string) => new RegExp(r, 'g'),
-      flip(match)(document.body.innerHTML),
-      uniq,
-      filter(carrier.validator),
-      // objOf('trackingNumbers'),
-      // tap(x => console.log('x', x)),
-    )(carrier),
-    name: carrier.name,
-  })
-  );
-
-  console.log('ccc', foo);
-}
-
-// chrome.runtime.onMessage.addListener(
-//   function(request, sender, sendResponse) {
-//     // console.log(sender.tab ?
-//     //             "from a content script:" + sender.tab.url :
-//     //             "from the extension");
-//     // if (request.greeting == "hello")
-//     //   sendResponse({farewell: "goodbye"});
-//     const found = document.body.innerHTML.match(new RegExp('(\\b' + carriers.usps.patterns.join('\\b)|(\\b') + '\\b)', 'g'));
-
-//     const f = (found || []);
-
-//     console.log('found', (found || []).filter(onlyUnique));
-
-//     // console.log('reg', '(' + usps.patterns.join(')|(') + ')');
-//     // console.log('its', document.body.innerHTML);
-//   });
-
-//   function onlyUnique(value, index, self) {
-//     return self.indexOf(value) === index;
-// }
+//   console.log('ccc', foo);
+// });
