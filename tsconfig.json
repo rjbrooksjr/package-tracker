@@ -10,5 +10,5 @@
     "lib": ["es2017", "dom"],
     "resolveJsonModule": true,
   },
-  "include": ["src/background", "src/contentscript", "src/common"],
+  "include": ["src/background", "src/contentscript", "src/common", "src/tests"],
 }

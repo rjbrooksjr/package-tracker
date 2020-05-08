@@ -18,4 +18,11 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'prettier/@typescript-eslint',
   ],
+  rules: {
+    'comma-style': ['error', 'last'],
+    'eol-last': ['error', 'always'],
+    'max-len': ['error', { 'code': 120, 'tabWidth': 2 }],
+    'semi': ['error', 'always'],
+    '@typescript-eslint/no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }]
+  }
 };
