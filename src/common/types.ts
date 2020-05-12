@@ -39,3 +39,10 @@ export type SerialData = {
   checkDigit: string;
   checksum: Checksum;
 }
+
+export type StoredTrackingNumbers = {
+  [key: string]: Array<{
+    trackingNumber: string;
+    status: string;
+  }>
+}
