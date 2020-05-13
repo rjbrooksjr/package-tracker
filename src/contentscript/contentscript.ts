@@ -1,7 +1,7 @@
 import './contentscript.scss';
 import { Carrier, TrackingData, TrackingMatchResult, SerialData } from '../common/types';
 import { mod10, dummy, getSerialData } from '../common/util';
-import { pipe, map, prop, join, flip, match, filter, uniq, applySpec, flatten, tap } from 'ramda';
+import { pipe, map, prop, join, flip, match, filter, uniq, applySpec, flatten, tap, trim } from 'ramda';
 import * as usps from '../../external/tracking_number_data/couriers/usps.json';
 
 const carriers = [usps];
@@ -13,6 +13,7 @@ const getList = (trackingNumber: TrackingData): string[] => pipe(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   flip(match)(document.body.innerHTML.replace(/(<([^>]+)>)/ig,"")) as any,
   uniq,
+  map(trim),
 )(trackingNumber);
 
 const validator = (trackingData: TrackingData): (x: SerialData) => boolean =>
