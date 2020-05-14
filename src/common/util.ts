@@ -51,3 +51,5 @@ export const getSerialData = (
     checksum,
   };
 };
+
+export const log = (t, x) => (console.log(t, x), x);
