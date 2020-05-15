@@ -45,3 +45,7 @@ export type StoredTrackingNumber = {
   trackingNumber: string;
   status: string;
 }
+
+export type TrackingStorage = {
+  tracking: StoredTrackingNumber[];
+}
